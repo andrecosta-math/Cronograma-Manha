@@ -26,12 +26,10 @@
             padding: 5px;
             display: flex;
             justify-content: center;
-            /* Removido overflow-x: auto */
         }
         .container {
             width: 100%;
             max-width: 900px;
-            /* Removido min-width para permitir que encolha */
             background-color: var(--card-background-color);
             padding: 5px;
             border-radius: 8px;
@@ -107,36 +105,53 @@
         .schedule-item:hover {
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
         }
-        .drag-handle {
-            cursor: move;
-            color: var(--secondary-color);
-            font-size: 0.5em;
-            user-select: none;
-            padding-top: px;
+        /* --- ESTILOS PARA O NOVO CONTROLE DE REORDENAÇÃO --- */
+        .reorder-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            align-self: flex-start;
+            padding-top: 2px;
         }
-        .schedule-item.dragging {
+        .reorder-btn {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.4em;
+            line-height: 0.7;
+            transition: color 0.2s, transform 0.1s;
+        }
+        .reorder-btn:hover:not(:disabled) {
+            color: var(--primary-color);
+            transform: scale(1.2);
+        }
+        .reorder-btn:disabled {
+            color: #ccc;
+            cursor: not-allowed;
             opacity: 0.5;
         }
+
         .time-display {
             font-weight: bold;
             font-size: 0.5em;
             color: var(--time);
             min-width: 5px;
             text-align: right;
-            flex-shrink: 0; /* Impede que o horário encolha muito */
+            flex-shrink: 0;
         }
         .item-details {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
             gap: 0px;
-            min-width: 0; /* Permite que o conteúdo encolha corretamente */
+            min-width: 0;
         }
         .item-main-fields {
             display: flex;
             gap: 5px;
-            /* --- ALTERAÇÃO PRINCIPAL: Impede que os campos quebrem linha --- */
-            flex-wrap: nowrap; 
+            flex-wrap: nowrap;
         }
         .item-details input, .item-details textarea {
             border: 1px solid var(--border-color);
@@ -153,18 +168,16 @@
         .item-details input.title {
             font-weight: bold;
             flex-grow: 1;
-            min-width: 0; /* Permite que encolha */
+            min-width: 0;
         }
-        /* --- ALTERAÇÃO: Deixa o campo mais flexível para encolher --- */
         .item-details input.responsible {
-            flex: 1 1 100px; /* Pode crescer, encolher, começa com 100px de base */
+            flex: 1 1 100px;
             font-style: italic;
             color: var(--responsible);
             min-width: 0;
         }
-        /* --- ALTERAÇÃO: Deixa o campo mais flexível para encolher --- */
         .item-details input.duration {
-            flex: 0 1 40px; /* Não cresce, mas pode encolher, começa com 90px de base */
+            flex: 0 1 40px;
             text-align: center;
             min-width: 0;
         }
@@ -185,7 +198,7 @@
             font-size: 0.5em;
             resize: vertical;
             background-color: #f8f9fa;
-            box-sizing: border-box; /* Garante que o padding não afete a largura total */
+            box-sizing: border-box;
         }
         .delete-item {
             background-color: #eb0000;
@@ -293,38 +306,46 @@ Liberar crianças`
                 const startTimeValue = startTimeInput.value;
                 if (!startTimeValue) return;
                 let currentTime = new Date(`1970-01-01T${startTimeValue}:00`);
+                
                 scheduleData.forEach((item, index) => {
                     const li = document.createElement('li');
                     li.className = 'schedule-item';
-                    li.draggable = true;
                     li.dataset.index = index;
+
                     const timeDisplay = document.createElement('span');
                     timeDisplay.className = 'time-display';
                     timeDisplay.textContent = `${formatTime(currentTime)}h`;
+
                     const itemDetails = document.createElement('div');
                     itemDetails.className = 'item-details';
+                    
                     const itemMainFields = document.createElement('div');
                     itemMainFields.className = 'item-main-fields';
+                    
                     const titleInput = document.createElement('input');
                     titleInput.type = 'text';
                     titleInput.className = 'title';
                     titleInput.value = item.title;
                     titleInput.placeholder = 'Título da Ação';
+                    
                     const responsibleInput = document.createElement('input');
                     responsibleInput.type = 'text';
                     responsibleInput.className = 'responsible';
                     responsibleInput.value = item.responsible;
                     responsibleInput.placeholder = 'Responsável';
+                    
                     const durationInput = document.createElement('input');
                     durationInput.type = 'number';
                     durationInput.className = 'duration';
                     durationInput.value = item.durationMinutes;
                     durationInput.min = '0';
                     durationInput.placeholder = 'Duração (min)';
+                    
                     itemMainFields.appendChild(titleInput);
                     itemMainFields.appendChild(responsibleInput);
                     itemMainFields.appendChild(durationInput);
                     itemDetails.appendChild(itemMainFields);
+
                     if (item.description !== undefined) {
                         const descriptionContainer = document.createElement('div');
                         descriptionContainer.className = 'description-container';
@@ -338,17 +359,42 @@ Liberar crianças`
                         descriptionContainer.appendChild(descriptionTextarea);
                         itemDetails.appendChild(descriptionContainer);
                     }
+
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'delete-item';
                     deleteBtn.textContent = 'x';
-                    const dragHandle = document.createElement('span');
-                    dragHandle.className = 'drag-handle';
-                    dragHandle.innerHTML = '|||';
-                    li.appendChild(dragHandle);
+
+                    // --- NOVO CONTROLE DE REORDENAÇÃO ---
+                    const reorderControls = document.createElement('div');
+                    reorderControls.className = 'reorder-controls';
+
+                    const moveUpBtn = document.createElement('button');
+                    moveUpBtn.className = 'reorder-btn';
+                    moveUpBtn.innerHTML = '▲';
+                    moveUpBtn.title = 'Mover para cima';
+                    if (index === 0) {
+                        moveUpBtn.disabled = true;
+                    }
+
+                    const moveDownBtn = document.createElement('button');
+                    moveDownBtn.className = 'reorder-btn';
+                    moveDownBtn.innerHTML = '▼';
+                    moveDownBtn.title = 'Mover para baixo';
+                    if (index === scheduleData.length - 1) {
+                        moveDownBtn.disabled = true;
+                    }
+
+                    reorderControls.appendChild(moveUpBtn);
+                    reorderControls.appendChild(moveDownBtn);
+
+                    // Montando o item da lista
+                    li.appendChild(reorderControls); // Substitui o drag-handle
                     li.appendChild(timeDisplay);
                     li.appendChild(itemDetails);
                     li.appendChild(deleteBtn);
+                    
                     scheduleList.appendChild(li);
+                    
                     currentTime = addMinutes(currentTime, item.durationMinutes);
                 });
             }
@@ -388,6 +434,7 @@ Liberar crianças`
                 }
             }
             function reorderSchedule(fromIndex, toIndex) {
+                if (fromIndex === toIndex) return;
                 const itemToMove = scheduleData.splice(fromIndex, 1)[0];
                 scheduleData.splice(toIndex, 0, itemToMove);
             }
@@ -422,75 +469,32 @@ Liberar crianças`
                      saveToLocalStorage();
                 }
             });
+            // Listener unificado para clique em deletar e reordenar
             scheduleList.addEventListener('click', (e) => {
+                const li = e.target.closest('.schedule-item');
+                if (!li) return;
+                const index = parseInt(li.dataset.index, 10);
+
                 if (e.target.classList.contains('delete-item')) {
-                    const li = e.target.closest('li');
-                    const index = parseInt(li.dataset.index, 10);
                     if (confirm('Tem certeza que deseja excluir este item?')) {
                         scheduleData.splice(index, 1);
                         renderSchedule();
                         saveToLocalStorage();
                     }
-                }
-            });
-            // --- DRAG AND DROP (CORREÇÃO) ---
-            let draggedElement = null;
-            let draggedIndex = null;
-            scheduleList.addEventListener('dragstart', (e) => {
-                if (e.target.classList.contains('schedule-item')) {
-                    draggedElement = e.target;
-                    draggedIndex = parseInt(draggedElement.dataset.index, 10);
-                    e.target.classList.add('dragging');
-                    e.dataTransfer.effectAllowed = 'move';
-                }
-            });
-            scheduleList.addEventListener('dragend', (e) => {
-                if (e.target.classList.contains('schedule-item')) {
-                    e.target.classList.remove('dragging');
-                    draggedElement = null;
-                    draggedIndex = null;
-                }
-            });
-            // O dragover agora APENAS previne o comportamento padrão
-            scheduleList.addEventListener('dragover', (e) => {
-                e.preventDefault();
-            });
-            // O drop agora faz toda a lógica de reordenação
-            scheduleList.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const afterElement = getDragAfterElement(scheduleList, e.clientY);
-                const allItems = [...scheduleList.querySelectorAll('.schedule-item:not(.dragging)')];
-                let toIndex;
-                if (afterElement == null) {
-                    toIndex = allItems.length; // Solto no final
-                } else {
-                    toIndex = allItems.indexOf(afterElement); // Solto no meio
-                }
-                // Se o novo índice for maior ou igual ao original, ajusta para compensar a remoção temporária do array
-                if (draggedIndex < toIndex) {
-                    toIndex--;
-                }
-                if (draggedIndex !== toIndex && draggedIndex !== null) {
-                    // Reordena o array de dados
-                    const itemToMove = scheduleData.splice(draggedIndex, 1)[0];
-                    scheduleData.splice(toIndex, 0, itemToMove);
-                    // Renderiza a lista com a nova ordem e salva
+                } else if (e.target.classList.contains('reorder-btn')) {
+                    let newIndex;
+                    if (e.target.innerHTML === '▲' && index > 0) {
+                        newIndex = index - 1;
+                    } else if (e.target.innerHTML === '▼' && index < scheduleData.length - 1) {
+                        newIndex = index + 1;
+                    } else {
+                        return; // Não move se estiver nos limites
+                    }
+                    reorderSchedule(index, newIndex);
                     renderSchedule();
                     saveToLocalStorage();
                 }
             });
-            function getDragAfterElement(container, y) {
-                const draggableElements = [...container.querySelectorAll('.schedule-item:not(.dragging)')];
-                return draggableElements.reduce((closest, child) => {
-                    const box = child.getBoundingClientRect();
-                    const offset = y - box.top - box.height / 2;
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset: offset, element: child };
-                    } else {
-                        return closest;
-                    }
-                }, { offset: Number.NEGATIVE_INFINITY }).element;
-            }
             // --- INICIALIZAÇÃO ---
             loadFromLocalStorage();
             renderSchedule();
