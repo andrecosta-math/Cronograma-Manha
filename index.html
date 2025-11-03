@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cronograma de Culto</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         /* --- GERAIS --- */
         :root {
@@ -223,7 +222,6 @@
             display: flex;
             gap: 10px;
             justify-content: center;
-            flex-wrap: wrap;
         }
         .btn {
             background-color: var(--primary-color);
@@ -245,57 +243,10 @@
         .btn-secondary:hover {
             background-color: #5a6268;
         }
-        .btn-export {
-            background-color: #28a745;
-        }
-        .btn-export:hover {
-            background-color: #218838;
-        }
-        /* Classe para ocultar elementos durante a exportação */
-        .hide-for-export {
-            display: none !important;
-        }
-        /* Classe temporária para o modo de exportação */
-        .export-mode {
-            background-color: white !important;
-        }
-        .export-mode .schedule-item {
-            border: 1px solid #ccc !important;
-        }
-        .export-mode .time-display {
-            color: #000 !important;
-        }
-        .export-mode .responsible {
-            color: #000 !important;
-        }
-        .export-mode .description-container {
-            background-color: #f9f9f9 !important;
-            border: 1px dashed #ddd !important;
-            padding: 5px !important;
-            border-radius: 3px !important;
-        }
-        .export-mode .description-label {
-            color: #666 !important;
-            font-weight: bold !important;
-        }
-        .export-mode .description-textarea {
-            background-color: white !important;
-            border: none !important;
-            resize: none !important;
-            overflow: hidden !important;
-        }
-        .export-watermark {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            font-size: 12px;
-            color: #999;
-            font-style: italic;
-        }
     </style>
 </head>
 <body>
-    <main class="container" id="main-container">
+    <main class="container">
         <header>
             <h5>Cronograma de Culto</h5>
         </header>
@@ -311,9 +262,7 @@
         <div class="action-buttons">
             <button class="btn" id="add-simple-item-btn">Adicionar Item Simples</button>
             <button class="btn btn-secondary" id="add-detailed-item-btn">Adicionar Item Detalhado</button>
-            <button class="btn btn-export" id="export-btn">📸 Exportar como Imagem</button>
         </div>
-        <div class="export-watermark" id="watermark" style="display: none;">Gerado em 03/11/2025</div>
     </main>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -323,10 +272,6 @@
             const startTimeInput = document.getElementById('start-time');
             const addSimpleItemBtn = document.getElementById('add-simple-item-btn');
             const addDetailedItemBtn = document.getElementById('add-detailed-item-btn');
-            const exportBtn = document.getElementById('export-btn');
-            const mainContainer = document.getElementById('main-container');
-            const watermark = document.getElementById('watermark');
-            
             let scheduleData = [
                 { title: 'Video regressivo', responsible: 'Mídia', durationMinutes: 5 },
                 { title: 'Vídeo introdutório', responsible: 'Mídia', durationMinutes: 1 },
@@ -346,18 +291,15 @@ Aviso 3`
                 { title: 'Último louvor', responsible: 'Líder de Louvor', durationMinutes: 5 },
                 { title: 'Palavra', responsible: 'Pregador', durationMinutes: 40 }
             ];
-            
             // --- FUNÇÕES ---
             function formatTime(date) {
                 const hours = String(date.getHours()).padStart(2, '0');
                 const minutes = String(date.getMinutes()).padStart(2, '0');
                 return `${hours}:${minutes}`;
             }
-            
             function addMinutes(date, minutes) {
                 return new Date(date.getTime() + minutes * 60000);
             }
-            
             function renderSchedule() {
                 scheduleList.innerHTML = '';
                 const startTimeValue = startTimeInput.value;
@@ -455,7 +397,6 @@ Aviso 3`
                     currentTime = addMinutes(currentTime, item.durationMinutes);
                 });
             }
-            
             function updateDataFromInputs() {
                 const items = document.querySelectorAll('.schedule-item');
                 const newData = [];
@@ -472,7 +413,6 @@ Aviso 3`
                 });
                 scheduleData = newData;
             }
-            
             function saveToLocalStorage() {
                 // Cria uma assinatura (hash) dos dados padrão ATUAIS no código.
                 const defaultDataHash = JSON.stringify([
@@ -504,7 +444,6 @@ Aviso 3`
                 };
                 localStorage.setItem('cultoSchedule', JSON.stringify(dataToSave));
             }            
-            
             function loadFromLocalStorage() {
                 const savedData = localStorage.getItem('cultoSchedule');
                 if (savedData) {
@@ -543,119 +482,32 @@ Aviso 3`
                     }
                 }
             }
-            
             function reorderSchedule(fromIndex, toIndex) {
                 if (fromIndex === toIndex) return;
                 const itemToMove = scheduleData.splice(fromIndex, 1)[0];
                 scheduleData.splice(toIndex, 0, itemToMove);
             }
-            
-            // --- FUNÇÃO DE EXPORTAÇÃO ---
-            async function exportAsImage() {
-                // Ocultar elementos que não devem aparecer na imagem
-                const elementsToHide = document.querySelectorAll('.action-buttons, .reorder-controls, .delete-item');
-                elementsToHide.forEach(el => el.classList.add('hide-for-export'));
-                
-                // Adicionar classe de modo de exportação para melhorar a aparência
-                mainContainer.classList.add('export-mode');
-                
-                // Converter textareas para spans estáticos
-                const textareas = document.querySelectorAll('.description-textarea');
-                const originalElements = [];
-                
-                textareas.forEach(textarea => {
-                    const span = document.createElement('div');
-                    span.className = 'description-textarea';
-                    span.style.whiteSpace = 'pre-wrap';
-                    span.style.padding = '5px';
-                    span.style.border = '1px solid #ddd';
-                    span.style.borderRadius = '4px';
-                    span.style.fontSize = '0.58em';
-                    span.textContent = textarea.value;
-                    
-                    const container = textarea.parentElement;
-                    originalElements.push({ container, original: textarea });
-                    container.replaceChild(span, textarea);
-                });
-                
-                // Mostrar marca d'água
-                watermark.style.display = 'block';
-                
-                // Aguardar um pouco para as alterações CSS serem aplicadas
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                try {
-                    // Usar html2canvas para capturar o conteúdo
-                    const canvas = await html2canvas(mainContainer, {
-                        scale: 2, // Aumentar a qualidade da imagem
-                        backgroundColor: '#ffffff',
-                        logging: false,
-                        useCORS: true,
-                        allowTaint: true
-                    });
-                    
-                    // Converter para blob e baixar
-                    canvas.toBlob((blob) => {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        const title = cultoTitleInput.value || 'Cronograma';
-                        const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-                        a.href = url;
-                        a.download = `${title}_${date}.png`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 'image/png');
-                    
-                } catch (error) {
-                    console.error('Erro ao exportar imagem:', error);
-                    alert('Ocorreu um erro ao tentar exportar a imagem. Por favor, tente novamente.');
-                } finally {
-                    // Restaurar elementos originais
-                    elementsToHide.forEach(el => el.classList.remove('hide-for-export'));
-                    mainContainer.classList.remove('export-mode');
-                    
-                    // Restaurar textareas
-                    originalElements.forEach(({ container, original }) => {
-                        const span = container.querySelector('.description-textarea');
-                        if (span && span !== original) {
-                            container.replaceChild(original, span);
-                        }
-                    });
-                    
-                    // Ocultar marca d'água
-                    watermark.style.display = 'none';
-                }
-            }
-            
             // --- EVENT LISTENERS ---
             addSimpleItemBtn.addEventListener('click', () => {
                 scheduleData.push({ title: 'Novo Item Simples', responsible: '', durationMinutes: 5 });
                 renderSchedule();
                 saveToLocalStorage();
             });
-            
             addDetailedItemBtn.addEventListener('click', () => {
                 scheduleData.push({ title: 'Novo Item Detalhado', responsible: '', durationMinutes: 10, description: '' });
                 renderSchedule();
                 saveToLocalStorage();
             });
-            
             startTimeInput.addEventListener('change', () => {
                 renderSchedule();
                 saveToLocalStorage();
             });
-            
-            exportBtn.addEventListener('click', exportAsImage);
-            
             scheduleList.addEventListener('focusout', (e) => {
                 if (e.target.matches('.title, .responsible')) {
                     updateDataFromInputs();
                     saveToLocalStorage();
                 }
             });
-            
             scheduleList.addEventListener('change', (e) => {
                 if (e.target.matches('.duration')) {
                     updateDataFromInputs();
@@ -666,7 +518,6 @@ Aviso 3`
                      saveToLocalStorage();
                 }
             });
-            
             // Listener unificado para clique em deletar e reordenar
             scheduleList.addEventListener('click', (e) => {
                 const li = e.target.closest('.schedule-item');
@@ -693,7 +544,6 @@ Aviso 3`
                     saveToLocalStorage();
                 }
             });
-            
             // --- INICIALIZAÇÃO ---
             loadFromLocalStorage();
             renderSchedule();
