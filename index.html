@@ -132,6 +132,7 @@
             cursor: not-allowed;
             opacity: 0.5;
         }
+
         .time-display {
             font-weight: bold;
             font-size: 0.6em;
@@ -221,7 +222,6 @@
             display: flex;
             gap: 10px;
             justify-content: center;
-            flex-wrap: wrap;
         }
         .btn {
             background-color: var(--primary-color);
@@ -256,29 +256,22 @@
             <h6 for="start-time">Horário de Início:</h6>
             <input type="time" id="start-time" value="09:55">
         </section>
-        <ul id="schedule-list"></ul>
+        <ul id="schedule-list">
+            <!-- Os itens do cronograma serão inseridos aqui pelo JavaScript -->
+        </ul>
         <div class="action-buttons">
             <button class="btn" id="add-simple-item-btn">Adicionar Item Simples</button>
             <button class="btn btn-secondary" id="add-detailed-item-btn">Adicionar Item Detalhado</button>
-            <!-- ✅ NOVO BOTÃO DE EXPORTAÇÃO -->
-            <button class="btn" id="export-image-btn">Exportar como Imagem</button>
         </div>
     </main>
-
-    <!-- ✅ Passo 1: Biblioteca html2canvas -->
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // (todo o seu código original permanece igual)
-
             // --- ELEMENTOS DO DOM ---
             const scheduleList = document.getElementById('schedule-list');
             const cultoTitleInput = document.getElementById('culto-title');
             const startTimeInput = document.getElementById('start-time');
             const addSimpleItemBtn = document.getElementById('add-simple-item-btn');
             const addDetailedItemBtn = document.getElementById('add-detailed-item-btn');
-            const exportImageBtn = document.getElementById('export-image-btn'); // ✅ novo botão
             let scheduleData = [
                 { title: 'Video regressivo', responsible: 'Mídia', durationMinutes: 5 },
                 { title: 'Vídeo introdutório', responsible: 'Mídia', durationMinutes: 1 },
@@ -298,23 +291,262 @@ Aviso 3`
                 { title: 'Último louvor', responsible: 'Líder de Louvor', durationMinutes: 5 },
                 { title: 'Palavra', responsible: 'Pregador', durationMinutes: 40 }
             ];
+            // --- FUNÇÕES ---
+            function formatTime(date) {
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${hours}:${minutes}`;
+            }
+            function addMinutes(date, minutes) {
+                return new Date(date.getTime() + minutes * 60000);
+            }
+            function renderSchedule() {
+                scheduleList.innerHTML = '';
+                const startTimeValue = startTimeInput.value;
+                if (!startTimeValue) return;
+                let currentTime = new Date(`1970-01-01T${startTimeValue}:00`);
+                
+                scheduleData.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'schedule-item';
+                    li.dataset.index = index;
 
-            /* (todo o restante do seu JavaScript original continua igual até o final) */
+                    const timeDisplay = document.createElement('span');
+                    timeDisplay.className = 'time-display';
+                    timeDisplay.textContent = `${formatTime(currentTime)}h`;
 
+                    const itemDetails = document.createElement('div');
+                    itemDetails.className = 'item-details';
+                    
+                    const itemMainFields = document.createElement('div');
+                    itemMainFields.className = 'item-main-fields';
+                    
+                    const titleInput = document.createElement('input');
+                    titleInput.type = 'text';
+                    titleInput.className = 'title';
+                    titleInput.value = item.title;
+                    titleInput.placeholder = 'Título da Ação';
+                    
+                    const responsibleInput = document.createElement('input');
+                    responsibleInput.type = 'text';
+                    responsibleInput.className = 'responsible';
+                    responsibleInput.value = item.responsible;
+                    responsibleInput.placeholder = 'Responsável';
+                    
+                    const durationInput = document.createElement('input');
+                    durationInput.type = 'number';
+                    durationInput.className = 'duration';
+                    durationInput.value = item.durationMinutes;
+                    durationInput.min = '0';
+                    durationInput.placeholder = 'Duração (min)';
+                    
+                    itemMainFields.appendChild(titleInput);
+                    itemMainFields.appendChild(responsibleInput);
+                    itemMainFields.appendChild(durationInput);
+                    itemDetails.appendChild(itemMainFields);
+
+                    if (item.description !== undefined) {
+                        const descriptionContainer = document.createElement('div');
+                        descriptionContainer.className = 'description-container';
+                        const label = document.createElement('span');
+                        label.className = 'description-label';
+                        label.textContent = 'Descrição Detalhada:';
+                        descriptionContainer.appendChild(label);
+                        const descriptionTextarea = document.createElement('textarea');
+                        descriptionTextarea.className = 'description-textarea';
+                        descriptionTextarea.value = item.description;
+                        descriptionContainer.appendChild(descriptionTextarea);
+                        itemDetails.appendChild(descriptionContainer);
+                    }
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-item';
+                    deleteBtn.textContent = 'x';
+
+                    // --- NOVO CONTROLE DE REORDENAÇÃO ---
+                    const reorderControls = document.createElement('div');
+                    reorderControls.className = 'reorder-controls';
+
+                    const moveUpBtn = document.createElement('button');
+                    moveUpBtn.className = 'reorder-btn';
+                    moveUpBtn.innerHTML = '▲';
+                    moveUpBtn.title = 'Mover para cima';
+                    if (index === 0) {
+                        moveUpBtn.disabled = true;
+                    }
+
+                    const moveDownBtn = document.createElement('button');
+                    moveDownBtn.className = 'reorder-btn';
+                    moveDownBtn.innerHTML = '▼';
+                    moveDownBtn.title = 'Mover para baixo';
+                    if (index === scheduleData.length - 1) {
+                        moveDownBtn.disabled = true;
+                    }
+
+                    reorderControls.appendChild(moveUpBtn);
+                    reorderControls.appendChild(moveDownBtn);
+
+                    // Montando o item da lista
+                    li.appendChild(reorderControls); // Substitui o drag-handle
+                    li.appendChild(timeDisplay);
+                    li.appendChild(itemDetails);
+                    li.appendChild(deleteBtn);
+                    
+                    scheduleList.appendChild(li);
+                    
+                    currentTime = addMinutes(currentTime, item.durationMinutes);
+                });
+            }
+            function updateDataFromInputs() {
+                const items = document.querySelectorAll('.schedule-item');
+                const newData = [];
+                items.forEach(itemElement => {
+                    const title = itemElement.querySelector('.title').value;
+                    const responsible = itemElement.querySelector('.responsible').value;
+                    const duration = parseInt(itemElement.querySelector('.duration').value) || 0;
+                    const currentItemData = { title, responsible, durationMinutes: duration };
+                    const descriptionTextarea = itemElement.querySelector('.description-textarea');
+                    if (descriptionTextarea) {
+                        currentItemData.description = descriptionTextarea.value;
+                    }
+                    newData.push(currentItemData);
+                });
+                scheduleData = newData;
+            }
+            function saveToLocalStorage() {
+                // Cria uma assinatura (hash) dos dados padrão ATUAIS no código.
+                const defaultDataHash = JSON.stringify([
+                { title: 'Video regressivo', responsible: 'Mídia', durationMinutes: 5 },
+                { title: 'Vídeo introdutório', responsible: 'Mídia', durationMinutes: 1 },
+                { title: 'Introdução', responsible: 'Introdutor', durationMinutes: 4 },
+                { title: 'Louvor', responsible: 'Líder de Louvor', durationMinutes: 25 },
+                { title: 'Oferta', responsible: 'Introdutor', durationMinutes: 10 },
+                { title: 'Visitantes', responsible: 'Introdutor', durationMinutes: 0 },
+                { 
+                    title: 'Programação da Casa', 
+                    responsible: 'Introdutor e Mídia', 
+                    durationMinutes: 10, 
+                    description: `Aviso 1
+Aviso 2
+Aviso 3`
+                },
+                { title: 'Liberar as crianças', responsible: 'Introdutor', durationMinutes: 0 }, 
+                { title: 'Último louvor', responsible: 'Líder de Louvor', durationMinutes: 5 },
+                { title: 'Palavra', responsible: 'Pregador', durationMinutes: 40 }
+            ]);
+            
+                const dataToSave = {
+                    // Salva a assinatura junto com os dados do usuário
+                    defaultHash: defaultDataHash,
+                    title: cultoTitleInput.value,
+                    startTime: startTimeInput.value,
+                    items: scheduleData
+                };
+                localStorage.setItem('cultoSchedule', JSON.stringify(dataToSave));
+            }            
+            function loadFromLocalStorage() {
+                const savedData = localStorage.getItem('cultoSchedule');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+            
+                    // Cria uma assinatura (hash) dos dados padrão ATUAIS no código.
+                    const currentDefaultHash = JSON.stringify([
+                        { title: 'Video regressivo', responsible: 'Mídia', durationMinutes: 5 },
+                        { title: 'Vídeo introdutório', responsible: 'Mídia', durationMinutes: 1 },
+                        { title: 'Introdução', responsible: 'Introdutor', durationMinutes: 4 },
+                        { title: 'Louvor', responsible: 'Líder de Louvor', durationMinutes: 25 },
+                        { title: 'Oferta', responsible: 'Introdutor', durationMinutes: 10 },
+                        { title: 'Visitantes', responsible: 'Introdutor', durationMinutes: 0 },
+                        { 
+                            title: 'Programação da Casa', 
+                            responsible: 'Introdutor e Mídia', 
+                            durationMinutes: 10, 
+                            description: `Aviso 1
+        Aviso 2
+        Aviso 3`
+                        },
+                        { title: 'Liberar as crianças', responsible: 'Introdutor', durationMinutes: 0 }, 
+                        { title: 'Último louvor', responsible: 'Líder de Louvor', durationMinutes: 5 },
+                        { title: 'Palavra', responsible: 'Pregador', durationMinutes: 40 }
+                    ]);
+            
+                    // Compara a assinatura salva com a assinatura atual.
+                    // Se forem IGUAIS, os dados padrão não mudaram. É seguro carregar os dados do usuário.
+                    // Se forem DIFERENTES, o programador atualizou o código. Ignore o cache antigo.
+                    if (data.defaultHash === currentDefaultHash) {
+                        cultoTitleInput.value = data.title || 'Sessão';
+                        startTimeInput.value = data.startTime || '09:55';
+                        if (data.items && Array.isArray(data.items)) {
+                            scheduleData = data.items;
+                        }
+                    }
+                }
+            }
+            function reorderSchedule(fromIndex, toIndex) {
+                if (fromIndex === toIndex) return;
+                const itemToMove = scheduleData.splice(fromIndex, 1)[0];
+                scheduleData.splice(toIndex, 0, itemToMove);
+            }
+            // --- EVENT LISTENERS ---
+            addSimpleItemBtn.addEventListener('click', () => {
+                scheduleData.push({ title: 'Novo Item Simples', responsible: '', durationMinutes: 5 });
+                renderSchedule();
+                saveToLocalStorage();
+            });
+            addDetailedItemBtn.addEventListener('click', () => {
+                scheduleData.push({ title: 'Novo Item Detalhado', responsible: '', durationMinutes: 10, description: '' });
+                renderSchedule();
+                saveToLocalStorage();
+            });
+            startTimeInput.addEventListener('change', () => {
+                renderSchedule();
+                saveToLocalStorage();
+            });
+            scheduleList.addEventListener('focusout', (e) => {
+                if (e.target.matches('.title, .responsible')) {
+                    updateDataFromInputs();
+                    saveToLocalStorage();
+                }
+            });
+            scheduleList.addEventListener('change', (e) => {
+                if (e.target.matches('.duration')) {
+                    updateDataFromInputs();
+                    renderSchedule();
+                    saveToLocalStorage();
+                } else if (e.target.matches('.description-textarea')) {
+                     updateDataFromInputs();
+                     saveToLocalStorage();
+                }
+            });
+            // Listener unificado para clique em deletar e reordenar
+            scheduleList.addEventListener('click', (e) => {
+                const li = e.target.closest('.schedule-item');
+                if (!li) return;
+                const index = parseInt(li.dataset.index, 10);
+
+                if (e.target.classList.contains('delete-item')) {
+                    if (confirm('Tem certeza que deseja excluir este item?')) {
+                        scheduleData.splice(index, 1);
+                        renderSchedule();
+                        saveToLocalStorage();
+                    }
+                } else if (e.target.classList.contains('reorder-btn')) {
+                    let newIndex;
+                    if (e.target.innerHTML === '▲' && index > 0) {
+                        newIndex = index - 1;
+                    } else if (e.target.innerHTML === '▼' && index < scheduleData.length - 1) {
+                        newIndex = index + 1;
+                    } else {
+                        return; // Não move se estiver nos limites
+                    }
+                    reorderSchedule(index, newIndex);
+                    renderSchedule();
+                    saveToLocalStorage();
+                }
+            });
             // --- INICIALIZAÇÃO ---
             loadFromLocalStorage();
             renderSchedule();
-
-            // ✅ Passo 3: Função de exportação como imagem
-            exportImageBtn.addEventListener('click', () => {
-                const container = document.querySelector('.container');
-                html2canvas(container, { scale: 2 }).then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = `${cultoTitleInput.value || 'cronograma'}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                });
-            });
         });
     </script>
 </body>
