@@ -504,7 +504,7 @@ async function exportAsImage() {
 
     // 1. Limpa o contêiner de exportação
     exportContainer.innerHTML = '';
-
+    exportContainer.style.fontSize = '15px';
     // 2. Cria a estrutura HTML para exportação
     const exportHeader = document.createElement('h3');
     exportHeader.textContent = `Cronograma: ${cultoTitleInput.value}`;
@@ -539,12 +539,14 @@ async function exportAsImage() {
         timeSpan.style.display = 'inline-block';
         timeSpan.style.minWidth = '50px';
         timeSpan.textContent = `${formatTime(currentTime)}h`;
+        timeSpan.style.fontSize = '15px';
 
         const titleSpan = document.createElement('span');
         titleSpan.style.fontWeight = 'bold';
         titleSpan.style.color = '#212529';
         titleSpan.style.marginRight = '15px';
         titleSpan.textContent = item.title;
+        titleSpan.style.fontSize = '15px';
 
         // ELEMENTO RESPONSÁVEL (permanecerá à esquerda do duration)
         const responsibleSpan = document.createElement('span');
@@ -552,6 +554,7 @@ async function exportAsImage() {
         responsibleSpan.style.fontStyle = 'italic';
         // mantive sem parênteses aqui para ficar consistente, você pode ajustar:
         responsibleSpan.textContent = `${item.responsible}`;
+        responsibleSpan.style.fontSize = '15px';
 
         // ELEMENTO DURAÇÃO (fica à direita do responsável)
         const durationSpan = document.createElement('span');
@@ -567,6 +570,7 @@ async function exportAsImage() {
         durationSpan.style.top = '50%';
         durationSpan.style.transform = 'translateY(-50%)';
         durationSpan.style.whiteSpace = 'nowrap';
+       durationSpan.style.fontSize = '15px'; 
 
         responsibleSpan.style.position = 'absolute';
         // atribuímos right dinamicamente abaixo (após medir durationWidth)
