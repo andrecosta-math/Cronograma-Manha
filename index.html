@@ -512,6 +512,12 @@ async function exportAsImage() {
     exportHeader.style.textAlign = 'center';
     exportHeader.style.color = '#333';
 
+    const exportInfo = document.createElement('p');
+    exportInfo.textContent = `Início: ${startTimeInput.value}`;
+    exportInfo.style.marginBottom = '20px';
+    exportInfo.style.fontSize = '14px';
+    exportInfo.style.color = '#555';
+
     const exportList = document.createElement('div');
     exportList.style.border = '1px solid #ddd';
     exportList.style.borderRadius = '5px';
