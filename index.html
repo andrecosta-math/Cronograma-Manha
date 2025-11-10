@@ -527,79 +527,80 @@ Aviso 3`
                 let currentTime = new Date(`1970-01-01T${startTimeValue}:00`);
 
                 scheduleData.forEach(item => {
-    const itemDiv = document.createElement('div');
-    itemDiv.style.padding = '12px';
-    itemDiv.style.borderBottom = '1px solid #eee';
-    itemDiv.style.fontSize = '15px';
-    itemDiv.style.position = 'relative'; // referência para o responsável
+                    const itemDiv = document.createElement('div');
+                    itemDiv.style.padding = '12px';
+                    itemDiv.style.borderBottom = '1px solid #eee';
+                    itemDiv.style.fontSize = '15px';
+                    itemDiv.style.position = 'relative'; // referência para absolute
+                    // Observe: NÃO definimos paddingRight fixo aqui — será ajustado dinamicamente abaixo
 
-    const timeSpan = document.createElement('span');
-    timeSpan.style.fontWeight = 'bold';
-    timeSpan.style.color = '#eb0000';
-    timeSpan.style.marginRight = '15px';
-    timeSpan.style.display = 'inline-block';
-    timeSpan.style.minWidth = '50px';
-    timeSpan.textContent = `${formatTime(currentTime)}h`;
+                    const timeSpan = document.createElement('span');
+                    timeSpan.style.fontWeight = 'bold';
+                    timeSpan.style.color = '#eb0000';
+                    timeSpan.style.marginRight = '15px';
+                    timeSpan.style.display = 'inline-block';
+                    timeSpan.style.minWidth = '50px';
+                    timeSpan.textContent = `${formatTime(currentTime)}h`;
 
-    const titleSpan = document.createElement('span');
-    titleSpan.style.fontWeight = 'bold';
-    titleSpan.style.color = '#212529';
-    titleSpan.style.marginRight = '6px';
-    titleSpan.textContent = item.title;
+                    const titleSpan = document.createElement('span');
+                    titleSpan.style.fontWeight = 'bold';
+                    titleSpan.style.color = '#212529';
+                    titleSpan.style.marginRight = '15px';
+                    // Permitir que o título faça wrap normalmente (sem ellipsis), mas não invadirá a área do responsável
+                    titleSpan.textContent = item.title;
 
-    // ➕ NOVO SPAN: duração logo após o título
-    const durationSpan = document.createElement('span');
-    durationSpan.style.color = '#6c757d';
-    durationSpan.style.fontStyle = 'italic';
-    durationSpan.style.fontSize = '14px';
-    durationSpan.textContent = `(${item.durationMinutes}min)`;
-    durationSpan.style.marginRight = '15px';
+                    const responsibleSpan = document.createElement('span');
+                    responsibleSpan.style.color = '#4a6fa5';
+                    responsibleSpan.style.fontStyle = 'italic';
+                    responsibleSpan.textContent = `${item.responsible}`;
 
-    const responsibleSpan = document.createElement('span');
-    responsibleSpan.style.color = '#4a6fa5';
-    responsibleSpan.style.fontStyle = 'italic';
-    responsibleSpan.textContent = `${item.responsible}`;
+                    // posiciona o responsável à direita e centraliza verticalmente
+                    responsibleSpan.style.position = 'absolute';
+                    responsibleSpan.style.right = '12px';
+                    responsibleSpan.style.top = '50%';
+                    responsibleSpan.style.transform = 'translateY(-50%)';
+                    responsibleSpan.style.whiteSpace = 'nowrap';
 
-    // responsável permanece alinhado à direita
-    responsibleSpan.style.position = 'absolute';
-    responsibleSpan.style.right = '12px';
-    responsibleSpan.style.top = '50%';
-    responsibleSpan.style.transform = 'translateY(-50%)';
-    responsibleSpan.style.whiteSpace = 'nowrap';
+                    // Adiciona os elementos ao item (necessário para medir responsibleSpan)
+                    itemDiv.appendChild(timeSpan);
+                    itemDiv.appendChild(titleSpan);
+                    itemDiv.appendChild(responsibleSpan);
 
-    // adiciona na ordem correta: horário, título, duração, responsável
-    itemDiv.appendChild(timeSpan);
-    itemDiv.appendChild(titleSpan);
-    itemDiv.appendChild(durationSpan);
-    itemDiv.appendChild(responsibleSpan);
+                    // ---------- AJUSTE DINÂMICO: reserva espaço à direita para evitar sobreposição ----------
+                    // Medimos a largura do responsibleSpan depois que ele já está no DOM (renderizado).
+                    // Use requestAnimationFrame para garantir que o navegador tenha feito o layout.
+                    requestAnimationFrame(() => {
+                        const respWidth = responsibleSpan.offsetWidth || 0;
+                        // adiciona 24px de margem extra para folga (padding interno + segurança)
+                        itemDiv.style.paddingRight = `${respWidth + 15}px`;
 
-    // Ajuste dinâmico para o espaço reservado à direita
-    requestAnimationFrame(() => {
-        const respWidth = responsibleSpan.offsetWidth || 0;
-        const extraSpace = 15;
-        itemDiv.style.paddingRight = `${respWidth + extraSpace}px`;
+                        // Caso haja descrição abaixo, evite que ela encoste na área do responsável:
+                        // (a descrição usa paddingLeft no seu código; aqui garantimos paddingRight similar)
+                        const descP = itemDiv.querySelector('p');
+                        if (descP) {
+                            // se já existir, ajusta; caso contrário o bloco abaixo ao criar a descrição
+                            descP.style.paddingRight = `${respWidth + 24}px`;
+                        }
+                    });
+                    // ---------------------------------------------------------------------------------------
 
-        const descP = itemDiv.querySelector('p');
-        if (descP) {
-            descP.style.paddingRight = `${respWidth + extraSpace}px`;
-        }
-    });
+                    if (item.description) {
+                        const descP = document.createElement('p');
+                        descP.style.marginTop = '8px';
+                        descP.style.paddingLeft = '65px';
+                        // garante que a descrição também não invada a área direita onde fica o responsável
+                        // será ajustado dinamicamente acima (se necessário), mas colocamos um valor inicial razoável:
+                        descP.style.paddingRight = '40px';
+                        descP.style.color = '#6c757d';
+                        descP.style.fontSize = '13px';
+                        descP.style.whiteSpace = 'pre-line';
+                        descP.textContent = item.description;
+                        itemDiv.appendChild(descP);
+                    }
 
-    if (item.description) {
-        const descP = document.createElement('p');
-        descP.style.marginTop = '8px';
-        descP.style.paddingLeft = '65px';
-        descP.style.paddingRight = '40px';
-        descP.style.color = '#6c757d';
-        descP.style.fontSize = '13px';
-        descP.style.whiteSpace = 'pre-line';
-        descP.textContent = item.description;
-        itemDiv.appendChild(descP);
-    }
-
-    exportList.appendChild(itemDiv);
-    currentTime = addMinutes(currentTime, item.durationMinutes);
-});
+                    exportList.appendChild(itemDiv);
+                    currentTime = addMinutes(currentTime, item.durationMinutes);
+                });
 
                 exportContainer.appendChild(exportHeader);
                 exportContainer.appendChild(exportInfo);
